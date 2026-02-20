@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<CommandTable xmlns="http://schemas.microsoft.com/VisualStudio/2005-10-18/CommandTable">
+  <Extern href="stdidcmd.h"/>
+  <Extern href="vsshlids.h"/>
+
+  <Commands package="guidChatGptPackage">
+    <Groups>
+      <Group guid="guidChatGptCmdSet" id="MyMenuGroup" priority="0x0600">
+        <Parent guid="guidSHLMainMenu" id="IDM_VS_MENU_TOOLS"/>
+      </Group>
+
+      <!-- Editor context menu group -->
+      <Group guid="guidChatGptCmdSet" id="EditorCtxGroup" priority="0x0600">
+        <Parent guid="guidSHLMainMenu" id="IDM_VS_CTXT_CODEWIN"/>
+      </Group>
+    </Groups>
+
+    <Buttons>
+      <Button guid="guidChatGptCmdSet" id="cmdShowToolWindow" priority="0x0100" type="Button">
+        <Parent guid="guidChatGptCmdSet" id="MyMenuGroup" />
+        <Strings>
+          <ButtonText>ChatGPT Window</ButtonText>
+        </Strings>
+      </Button>
+
+      <Button guid="guidChatGptCmdSet" id="cmdAskSelection" priority="0x0101" type="Button">
+        <Parent guid="guidChatGptCmdSet" id="EditorCtxGroup" />
+        <Strings>
+          <ButtonText>Ask ChatGPT (Selection)</ButtonText>
+        </Strings>
+      </Button>
+    </Buttons>
+  </Commands>
+
+  <Symbols>
+    <GuidSymbol name="guidChatGptPackage" value="{7c21f4d1-6dc0-4b67-b2b2-29d5f8d3f4a1}" />
+    <GuidSymbol name="guidChatGptCmdSet" value="{9e64f5c5-0c65-4a2a-9c6b-9b1c2d0d7b0f}">
+      <IDSymbol name="MyMenuGroup" value="0x1020" />
+      <IDSymbol name="EditorCtxGroup" value="0x1030" />
+      <IDSymbol name="cmdShowToolWindow" value="0x0100" />
+      <IDSymbol name="cmdAskSelection" value="0x0101" />
+    </GuidSymbol>
+  </Symbols>
+</CommandTable>
