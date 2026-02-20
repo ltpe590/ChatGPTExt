@@ -31,11 +31,16 @@ namespace ChatGptVsix
 
         private void Execute(object sender, EventArgs e)
         {
-            ThreadHelper.JoinableTaskFactory.RunAsync(async () =>
+            ThreadHelper.JoinableTaskFactory.Run(async () =>
             {
-                await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-                await _package.ShowToolWindowAsync(typeof(ChatGptToolWindow), 0, true, _package.DisposalToken);
-            }).FileAndForget("ChatGptVsix/ShowToolWindow");
+                await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(_package.DisposalToken);
+
+                await _package.ShowToolWindowAsync(
+                    typeof(ChatGptToolWindow),
+                    0,
+                    true,
+                    _package.DisposalToken);
+            });
         }
 
     }

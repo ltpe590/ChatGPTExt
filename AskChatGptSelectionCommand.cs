@@ -21,8 +21,7 @@ namespace ChatGptVsix
             var menuCommandID = new CommandID(CommandSet, CommandId);
             var menuItem = new MenuCommand((_, __) =>
             {
-                ThreadHelper.JoinableTaskFactory.RunAsync(ExecuteAsync)
-                    .FileAndForget("ChatGptVsix/AskSelection");
+                ThreadHelper.JoinableTaskFactory.Run(ExecuteAsync);
             }, menuCommandID);
 
             commandService.AddCommand(menuItem);

@@ -12,18 +12,27 @@ namespace ChatGptVsix
             InitializeComponent();
         }
 
-        private async void SendBtn_Click(object sender, RoutedEventArgs e)
+        private void SendBtn_Click(object sender, RoutedEventArgs e)
+        {
+            _ = SendButtonHandlerAsync();
+        }
+
+        private async Task SendButtonHandlerAsync()
         {
             try
             {
-                await SendAsync(PromptBox.Text);
+                var prompt = PromptBox.Text;
+
+                if (string.IsNullOrWhiteSpace(prompt))
+                    return;
+
+                await SendAsync(prompt);
             }
             catch (Exception ex)
             {
                 ResponseBox.Text = ex.ToString();
             }
         }
-
 
         public async Task SendAsync(string prompt)
         {

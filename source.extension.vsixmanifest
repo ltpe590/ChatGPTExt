@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
-    <Metadata>
-        <Identity Id="ChatGPTExt.0629c33c-f60a-4421-ac6b-5a76bc2f70bb" Version="1.0" Language="en-US" Publisher="M M" />
-        <DisplayName>ChatGPTExt</DisplayName>
-        <Description>Empty VSIX Project.</Description>
-    </Metadata>
+	<Metadata>
+		<Identity Id="ChatGPTExt" Version="1.0.1" Language="en-US" Publisher="M" />
+		<DisplayName>ChatGPT Extension</DisplayName>
+		<Description xml:space="preserve">Adds a ChatGPT tool window and editor selection command.</Description>
+		<Tags>chatgpt;ai</Tags>
+	</Metadata>
     <Installation>
         <InstallationTarget Id="Microsoft.VisualStudio.Community" Version="[17.0, )">
             <ProductArchitecture>amd64</ProductArchitecture>

@@ -1,13 +1,17 @@
-﻿using System;
+﻿using Microsoft.VisualStudio;
+using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Shell.Interop;
+using System;
 using System.Runtime.InteropServices;
 using System.Threading;
-using Microsoft.VisualStudio.Shell;
 
 namespace ChatGptVsix
 {
     [PackageRegistration(UseManagedResourcesOnly = true, AllowsBackgroundLoading = true)]
     [InstalledProductRegistration("ChatGPT VSIX", "ChatGPT tool window + selection command", "1.0")]
-    [ProvideMenuResource("Commands.ctmenu", 1)]
+    [ProvideMenuResource("Menus.ctmenu", 1)]
+    [ProvideAutoLoad(VSConstants.UICONTEXT.NoSolution_string, PackageAutoLoadFlags.BackgroundLoad)]
+    [ProvideAutoLoad(VSConstants.UICONTEXT.SolutionExists_string, PackageAutoLoadFlags.BackgroundLoad)]
     [ProvideToolWindow(typeof(ChatGptToolWindow), Style = VsDockStyle.Tabbed, Window = EnvDTE.Constants.vsWindowKindOutput)]
     [Guid(PackageGuidString)]
     public sealed class ChatGptPackage : AsyncPackage

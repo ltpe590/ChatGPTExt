@@ -5,31 +5,33 @@
 
   <Commands package="guidChatGptPackage">
     <Groups>
-      <Group guid="guidChatGptCmdSet" id="MyMenuGroup" priority="0x0600">
-        <Parent guid="guidSHLMainMenu" id="IDM_VS_MENU_TOOLS"/>
-      </Group>
-
+		<Group guid="guidChatGptCmdSet" id="MyMenuGroup" priority="0x0600">
+			<Parent guid="guidSHLMainMenu" id="IDG_VS_WNDO_OTRWNDWS1"/>
+		</Group>
+  
       <!-- Editor context menu group -->
       <Group guid="guidChatGptCmdSet" id="EditorCtxGroup" priority="0x0600">
         <Parent guid="guidSHLMainMenu" id="IDM_VS_CTXT_CODEWIN"/>
       </Group>
     </Groups>
 
-    <Buttons>
-      <Button guid="guidChatGptCmdSet" id="cmdShowToolWindow" priority="0x0100" type="Button">
-        <Parent guid="guidChatGptCmdSet" id="MyMenuGroup" />
-        <Strings>
-          <ButtonText>ChatGPT Window</ButtonText>
-        </Strings>
-      </Button>
+	  <Buttons>
+		  <Button guid="guidChatGptCmdSet" id="cmdShowToolWindow" priority="0x0100" type="Button">
+			  <Parent guid="guidChatGptCmdSet" id="MyMenuGroup" />
+			  <Strings>
+				  <ButtonText>ChatGPT Window</ButtonText>
+				  <CanonicalName>ChatGptVsix.ShowToolWindow</CanonicalName>
+			  </Strings>
+		  </Button>
 
-      <Button guid="guidChatGptCmdSet" id="cmdAskSelection" priority="0x0101" type="Button">
-        <Parent guid="guidChatGptCmdSet" id="EditorCtxGroup" />
-        <Strings>
-          <ButtonText>Ask ChatGPT (Selection)</ButtonText>
-        </Strings>
-      </Button>
-    </Buttons>
+		  <Button guid="guidChatGptCmdSet" id="cmdAskSelection" priority="0x0101" type="Button">
+			  <Parent guid="guidChatGptCmdSet" id="EditorCtxGroup" />
+			  <Strings>
+				  <ButtonText>Ask ChatGPT (Selection)</ButtonText>
+				  <CanonicalName>ChatGptVsix.AskSelection</CanonicalName>
+			  </Strings>
+		  </Button>
+	  </Buttons>
   </Commands>
 
   <Symbols>
