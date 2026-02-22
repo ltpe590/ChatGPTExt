@@ -46,25 +46,8 @@ namespace ChatGptVsix
 
         private ILlmClient GetOrCreateClient()
         {
-            // If you later add a model selector, include model in the cache key.
-            const string model = "gpt-4o";
-
-            var apiKey = GetOpenAiApiKey();
-            if (string.IsNullOrWhiteSpace(apiKey))
-                throw new InvalidOperationException(
-                    "OpenAI API key not configured. Set OPENAI_API_KEY environment variable or add an Options page.");
-
-            // Cache per instance; if you change model/key at runtime, reset _llmClient accordingly.
-            return _llmClient ??= new OpenAiClient(_httpClient, model, apiKey);
-        }
-
-        private static string GetOpenAiApiKey()
-        {
-            // Preferred: environment variable.
-            return Environment.GetEnvironmentVariable("OPENAI_API_KEY") ?? string.Empty;
-
-            // Alternative sources you can implement later:
-            // return Properties.Settings.Default.OpenAiApiKey ?? string.Empty;
+            const string model = "qwen2.5-coder:3b";
+            return _llmClient ??= new OllamaClient(_httpClient, model);
         }
 
         private void SendBtn_Click(object sender, RoutedEventArgs e)
