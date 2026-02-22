@@ -10,9 +10,9 @@
 		</Group>
   
       <!-- Editor context menu group -->
-      <Group guid="guidChatGptCmdSet" id="EditorCtxGroup" priority="0x0600">
-        <Parent guid="guidSHLMainMenu" id="IDM_VS_CTXT_CODEWIN"/>
-      </Group>
+		<Group guid="guidChatGptCmdSet" id="MyMenuGroup" priority="0x0600">
+			<Parent guid="guidSHLMainMenu" id="IDM_VS_MENU_TOOLS"/>
+		</Group>
     </Groups>
 
 	  <Buttons>

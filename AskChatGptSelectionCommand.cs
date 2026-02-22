@@ -1,9 +1,13 @@
-﻿using EnvDTE;
+﻿using ChatGptVsix.Services;
+using EnvDTE;
 using Microsoft.VisualStudio.Shell;
 using System;
 using System.ComponentModel.Design;
+using System.IO.Packaging;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Documents;
+
 
 namespace ChatGptVsix
 {
@@ -31,6 +35,9 @@ namespace ChatGptVsix
         {
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
             var commandService = await package.GetServiceAsync(typeof(IMenuCommandService)) as OleMenuCommandService;
+            if (commandService is null)
+                return;
+
             _ = new AskChatGptSelectionCommand(package, commandService);
         }
 
@@ -56,13 +63,35 @@ namespace ChatGptVsix
             if (window.Content is ChatGptToolWindowControl ui)
             {
                 var prompt =
-$@"Explain / review this code and suggest improvements:
-
-```csharp
-{selectedText}
-```";
+                    "You are my C# coding assistant.\n\n" +
+                    "Task:\n" +
+                    "1) Identify issues (correctness, performance, async, threading, VS extensibility).\n" +
+                    "2) Suggest improvements.\n" +
+                    "3) Provide a revised snippet (only changed parts).\n\n" +
+                    "Code:\n" +
+                    "```csharp\n" +
+                    selectedText + "\n" +
+                    "```";
                 await ui.SendAsync(prompt);
             }
+
+            var contextService = new EditorContextService(_package);
+            var ctx = await contextService.GetCurrentAsync(surroundingLineCount: 200, ct: CancellationToken.None);
+
+            // Example prompt assembly (keep it short to stay under your 30k cap)
+            var aiprompt =
+            $@"You are a coding assistant.
+            File: {ctx.FilePath}
+            Language: {ctx.ContentType}
+
+            Selection (may be empty):
+            {ctx.SelectionText ?? ""}
+
+            Context:
+            {ctx.SurroundingText ?? ""}
+
+            Task: <your user request here>";
+
         }
     }
 }

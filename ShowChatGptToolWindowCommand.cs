@@ -25,7 +25,13 @@ namespace ChatGptVsix
         public static async Task InitializeAsync(AsyncPackage package)
         {
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-            var commandService = await package.GetServiceAsync(typeof(IMenuCommandService)) as OleMenuCommandService;
+
+            var commandService =
+                await package.GetServiceAsync(typeof(IMenuCommandService)) as OleMenuCommandService;
+
+            if (commandService is null)
+                return;
+
             _ = new ShowChatGptToolWindowCommand(package, commandService);
         }
 
