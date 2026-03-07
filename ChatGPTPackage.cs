@@ -8,11 +8,14 @@ using System.Threading;
 namespace ChatGptVsix
 {
     [PackageRegistration(UseManagedResourcesOnly = true, AllowsBackgroundLoading = true)]
-    [InstalledProductRegistration("ChatGPT VSIX", "ChatGPT tool window + selection command", "1.0")]
+    [InstalledProductRegistration("AI Assistant", "Multi-provider AI coding assistant for Visual Studio", "1.0")]
     [ProvideMenuResource("Menus.ctmenu", 1)]
-    [ProvideAutoLoad(VSConstants.UICONTEXT.NoSolution_string, PackageAutoLoadFlags.BackgroundLoad)]
+    [ProvideAutoLoad(VSConstants.UICONTEXT.NoSolution_string,  PackageAutoLoadFlags.BackgroundLoad)]
     [ProvideAutoLoad(VSConstants.UICONTEXT.SolutionExists_string, PackageAutoLoadFlags.BackgroundLoad)]
-    [ProvideToolWindow(typeof(ChatGptToolWindow), Style = VsDockStyle.Tabbed, Window = EnvDTE.Constants.vsWindowKindOutput)]
+    [ProvideToolWindow(typeof(ChatGptToolWindow), Style = VsDockStyle.Tabbed,
+                       Window = EnvDTE.Constants.vsWindowKindOutput)]
+    // Register Options page: Tools > Options > AI Assistant
+    [ProvideOptionPage(typeof(ChatGptOptionsPage), "AI Assistant", "Provider & Model", 0, 0, true)]
     [Guid(PackageGuidString)]
     public sealed class ChatGptPackage : AsyncPackage
     {
@@ -23,7 +26,6 @@ namespace ChatGptVsix
             IProgress<ServiceProgressData> progress)
         {
             await JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
-
             await ShowChatGptToolWindowCommand.InitializeAsync(this);
             await AskChatGptSelectionCommand.InitializeAsync(this);
         }

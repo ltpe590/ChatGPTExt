@@ -1,7 +1,6 @@
 ﻿using Microsoft.VisualStudio.Shell;
 using System;
 using System.Runtime.InteropServices;
-using System.Runtime.Remoting.Contexts;
 
 namespace ChatGptVsix
 {
@@ -10,8 +9,19 @@ namespace ChatGptVsix
     {
         public ChatGptToolWindow() : base(null)
         {
-            Caption = "ChatGPT";
+            Caption = "AI Assistant";
             Content = new ChatGptToolWindowControl();
+        }
+
+        /// <summary>
+        /// Called by VS after the tool window is created.
+        /// Passes the package so the control can read Options at send-time.
+        /// </summary>
+        public override void OnToolWindowCreated()
+        {
+            base.OnToolWindowCreated();
+            if (Content is ChatGptToolWindowControl ctrl)
+                ctrl.SetPackage((AsyncPackage)Package);
         }
     }
 }

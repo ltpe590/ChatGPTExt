@@ -1,54 +1,60 @@
-﻿using System;
+﻿using ChatGptVsix.Services;
+using System;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace ChatGptVsix.Services;
-
-internal sealed class OllamaClient : ILlmClient
+namespace ChatGptVsix.Services
 {
-    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
-
-    private readonly HttpClient _http;
-    private readonly string _model;
-
-    public OllamaClient(HttpClient http, string model)
+    internal sealed class OllamaClient : ILlmClient
     {
-        _http = http ?? throw new ArgumentNullException(nameof(http));
-        _http.BaseAddress ??= new Uri("http://localhost:11434/"); // required if you use relative URLs
-        _model = model ?? throw new ArgumentNullException(nameof(model));
-    }
+        private static readonly JsonSerializerOptions JsonOptions =
+            new JsonSerializerOptions(JsonSerializerDefaults.Web);
 
-    public async Task<string> ChatAsync(string systemPrompt, string userPrompt, CancellationToken ct)
-    {
-        var payload = new
+        private readonly HttpClient _http;
+        private readonly string     _model;
+
+        public OllamaClient(HttpClient http, string model, string baseUrl = "http://localhost:11434/")
         {
-            model = _model,
-            messages = new object[]
+            _http  = http  ?? throw new ArgumentNullException(nameof(http));
+            _model = model ?? throw new ArgumentNullException(nameof(model));
+
+            var uri = (baseUrl ?? "http://localhost:11434/").TrimEnd('/') + "/";
+            _http.BaseAddress = new Uri(uri);
+        }
+
+        public async Task<string> ChatAsync(string systemPrompt, string userPrompt, CancellationToken ct)
+        {
+            var payload = new
             {
-                new { role = "system", content = systemPrompt },
-                new { role = "user", content = userPrompt }
-            },
-            stream = false
-        };
+                model    = _model,
+                messages = new object[]
+                {
+                    new { role = "system", content = systemPrompt },
+                    new { role = "user",   content = userPrompt   }
+                },
+                stream = false
+            };
 
-        using var resp = await _http.PostAsJsonAsync("v1/chat/completions", payload, JsonOptions, ct)
-                                    .ConfigureAwait(false);
+            using var resp = await _http
+                .PostAsJsonAsync("v1/chat/completions", payload, JsonOptions, ct)
+                .ConfigureAwait(false);
 
-        var body = await resp.Content.ReadAsStringAsync().ConfigureAwait(false);
+            var body = await resp.Content.ReadAsStringAsync().ConfigureAwait(false);
 
-        if (!resp.IsSuccessStatusCode)
-            throw new InvalidOperationException($"Ollama error ({(int)resp.StatusCode}): {body}");
+            if (!resp.IsSuccessStatusCode)
+                throw new InvalidOperationException($"Ollama error ({(int)resp.StatusCode}): {body}");
 
-        using var doc = JsonDocument.Parse(body);
-        var content = doc.RootElement
-            .GetProperty("choices")[0]
-            .GetProperty("message")
-            .GetProperty("content")
-            .GetString();
+            using var doc = JsonDocument.Parse(body);
+            var content = doc.RootElement
+                .GetProperty("choices")[0]
+                .GetProperty("message")
+                .GetProperty("content")
+                .GetString();
 
-        return content ?? string.Empty;
+            return content ?? string.Empty;
+        }
     }
 }

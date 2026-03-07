@@ -3,11 +3,8 @@ using EnvDTE;
 using Microsoft.VisualStudio.Shell;
 using System;
 using System.ComponentModel.Design;
-using System.IO.Packaging;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows.Documents;
-
 
 namespace ChatGptVsix
 {
@@ -21,13 +18,11 @@ namespace ChatGptVsix
         private AskChatGptSelectionCommand(AsyncPackage package, OleMenuCommandService commandService)
         {
             _package = package;
-
             var menuCommandID = new CommandID(CommandSet, CommandId);
             var menuItem = new MenuCommand((_, __) =>
             {
                 ThreadHelper.JoinableTaskFactory.Run(ExecuteAsync);
             }, menuCommandID);
-
             commandService.AddCommand(menuItem);
         }
 
@@ -35,9 +30,7 @@ namespace ChatGptVsix
         {
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
             var commandService = await package.GetServiceAsync(typeof(IMenuCommandService)) as OleMenuCommandService;
-            if (commandService is null)
-                return;
-
+            if (commandService is null) return;
             _ = new AskChatGptSelectionCommand(package, commandService);
         }
 
@@ -45,53 +38,68 @@ namespace ChatGptVsix
         {
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
-            var dte = await _package.GetServiceAsync(typeof(DTE)) as DTE;
-            if (dte == null) return;
-            if (dte?.ActiveDocument == null) return;
-
-            var sel = dte.ActiveDocument.Selection as EnvDTE.TextSelection;
-            var selectedText = sel?.Text;
-
-            if (string.IsNullOrWhiteSpace(selectedText))
-                selectedText = dte.ActiveDocument.Object("TextDocument") is TextDocument td ? td.StartPoint.CreateEditPoint().GetText(td.EndPoint) : "";
-
-            // Show tool window
-            var window = await _package.ShowToolWindowAsync(typeof(ChatGptToolWindow), 0, true, _package.DisposalToken);
-            if (window?.Frame == null)
-                return;
-
-            if (window.Content is ChatGptToolWindowControl ui)
-            {
-                var prompt =
-                    "You are my C# coding assistant.\n\n" +
-                    "Task:\n" +
-                    "1) Identify issues (correctness, performance, async, threading, VS extensibility).\n" +
-                    "2) Suggest improvements.\n" +
-                    "3) Provide a revised snippet (only changed parts).\n\n" +
-                    "Code:\n" +
-                    "```csharp\n" +
-                    selectedText + "\n" +
-                    "```";
-                await ui.SendAsync(prompt);
-            }
+            // 1. Capture editor context FIRST (before showing window)
+            int surroundingLines = 80;
+            var page = (ChatGptOptionsPage)_package.GetDialogPage(typeof(ChatGptOptionsPage));
+            if (page != null) surroundingLines = page.SurroundingLineCount;
 
             var contextService = new EditorContextService(_package);
-            var ctx = await contextService.GetCurrentAsync(surroundingLineCount: 200, ct: CancellationToken.None);
+            var ctx = await contextService.GetCurrentAsync(surroundingLines, CancellationToken.None)
+                                          .ConfigureAwait(true);
 
-            // Example prompt assembly (keep it short to stay under your 30k cap)
-            var aiprompt =
-            $@"You are a coding assistant.
-            File: {ctx.FilePath}
-            Language: {ctx.ContentType}
+            // 2. Show/focus the tool window
+            var window = await _package.ShowToolWindowAsync(
+                typeof(ChatGptToolWindow), 0, true, _package.DisposalToken);
 
-            Selection (may be empty):
-            {ctx.SelectionText ?? ""}
+            if (window?.Content is not ChatGptToolWindowControl ui) return;
 
-            Context:
-            {ctx.SurroundingText ?? ""}
+            // 3. Build the context-aware prompt
+            var prompt = BuildPrompt(ctx);
 
-            Task: <your user request here>";
+            // 4. Send it
+            await ui.SendAsync(prompt).ConfigureAwait(true);
+        }
 
+        private static string BuildPrompt(EditorContext ctx)
+        {
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine("You are a C# coding assistant embedded in Visual Studio.");
+            sb.AppendLine();
+
+            if (!string.IsNullOrWhiteSpace(ctx.FilePath))
+            {
+                sb.AppendLine($"File     : {ctx.FilePath}");
+                sb.AppendLine($"Language : {ctx.ContentType}");
+                sb.AppendLine();
+            }
+
+            if (!string.IsNullOrWhiteSpace(ctx.SelectionText))
+            {
+                sb.AppendLine("Selected code:");
+                sb.AppendLine("```csharp");
+                sb.AppendLine(ctx.SelectionText);
+                sb.AppendLine("```");
+                sb.AppendLine();
+                sb.AppendLine("Tasks:");
+                sb.AppendLine("1. Identify issues (correctness, performance, async/threading, VS extensibility).");
+                sb.AppendLine("2. Suggest improvements.");
+                sb.AppendLine("3. Provide a corrected snippet (changed parts only).");
+            }
+            else if (!string.IsNullOrWhiteSpace(ctx.SurroundingText))
+            {
+                sb.AppendLine("Current file context:");
+                sb.AppendLine("```csharp");
+                sb.AppendLine(ctx.SurroundingText);
+                sb.AppendLine("```");
+                sb.AppendLine();
+                sb.AppendLine("No specific selection. Please review the code and suggest improvements.");
+            }
+            else
+            {
+                sb.AppendLine("No code context available. Please ask your question.");
+            }
+
+            return sb.ToString();
         }
     }
 }

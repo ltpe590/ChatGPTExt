@@ -1,4 +1,5 @@
 ﻿using ChatGptVsix.Services;
+using Microsoft.VisualStudio.Shell;
 using System;
 using System.Net.Http;
 using System.Threading;
@@ -11,25 +12,21 @@ namespace ChatGptVsix
 {
     public partial class ChatGptToolWindowControl : UserControl, IDisposable
     {
-        // Single HttpClient for the control lifetime.
         private readonly HttpClient _httpClient;
         private CancellationTokenSource? _cts;
-
-        // Cache the client so you don't re-create it each request.
         private ILlmClient? _llmClient;
+
+        // Package reference so we can read Options at send-time
+        private AsyncPackage? _package;
 
         public ChatGptToolWindowControl()
         {
             InitializeComponent();
-
-            _httpClient = new HttpClient
-            {
-                // For OpenAI client, set this in OpenAiClient if it builds full URLs.
-                // If OpenAiClient uses relative URLs, set BaseAddress here.
-                // BaseAddress = new Uri("https://api.openai.com/"),
-                Timeout = TimeSpan.FromSeconds(120)
-            };
+            _httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(120) };
         }
+
+        /// <summary>Called by ChatGptToolWindow after creation so we can reach Options.</summary>
+        public void SetPackage(AsyncPackage package) => _package = package;
 
         public void Dispose()
         {
@@ -40,30 +37,42 @@ namespace ChatGptVsix
 
         private void CancelInFlight()
         {
-            try { _cts?.Cancel(); }
-            catch { /* ignore */ }
+            try { _cts?.Cancel(); } catch { /* ignore */ }
         }
 
-        private ILlmClient GetOrCreateClient()
+        private ILlmClient BuildClient()
         {
-            const string model = "qwen2.5-coder:3b";
-            return _llmClient ??= new OllamaClient(_httpClient, model);
+            ProviderSettings settings;
+
+            if (_package != null)
+            {
+                var page = (ChatGptOptionsPage)_package.GetDialogPage(typeof(ChatGptOptionsPage));
+                settings = page.ToProviderSettings();
+            }
+            else
+            {
+                // Fallback when package not yet wired (design-time / unit tests)
+                settings = ProviderSettings.DefaultsFor(LlmProvider.GitHubModels);
+            }
+
+            // Invalidate cached client when settings change
+            _llmClient = LlmClientFactory.Create(settings, _httpClient);
+
+            // Update status label
+            StatusText.Text = $"[{settings.Provider} / {settings.Model}]";
+
+            return _llmClient;
         }
 
         private void SendBtn_Click(object sender, RoutedEventArgs e)
-        {
-            _ = SendButtonHandlerAsync();
-        }
+            => _ = SendButtonHandlerAsync();
 
         private async Task SendButtonHandlerAsync()
         {
-            // Keep event handler non-async; exceptions handled here.
             try
             {
                 var prompt = PromptBox.Text;
-                if (string.IsNullOrWhiteSpace(prompt))
-                    return;
-
+                if (string.IsNullOrWhiteSpace(prompt)) return;
                 await SendAsync(prompt).ConfigureAwait(true);
             }
             catch (Exception ex)
@@ -80,17 +89,21 @@ namespace ChatGptVsix
             var ct = _cts.Token;
 
             SetBusy(true);
-
             try
             {
                 ResponseBox.Text = string.Empty;
 
-                const string system =
-                    "You are a senior C# developer. Be concise. Provide actionable suggestions and code.";
+                // Read system prompt from options (falls back to default if package not set)
+                string systemPrompt = "You are a senior C# developer. Be concise. Provide actionable suggestions and code.";
+                if (_package != null)
+                {
+                    var page = (ChatGptOptionsPage)_package.GetDialogPage(typeof(ChatGptOptionsPage));
+                    if (!string.IsNullOrWhiteSpace(page.SystemPrompt))
+                        systemPrompt = page.SystemPrompt;
+                }
 
-                var client = GetOrCreateClient();
-                var answer = await client.ChatAsync(system, prompt, ct).ConfigureAwait(true);
-
+                var client = BuildClient();
+                var answer = await client.ChatAsync(systemPrompt, prompt, ct).ConfigureAwait(true);
                 ResponseBox.Text = answer;
             }
             catch (OperationCanceledException)
@@ -99,7 +112,7 @@ namespace ChatGptVsix
             }
             catch (Exception ex)
             {
-                ResponseBox.Text = ex.ToString();
+                ResponseBox.Text = $"Error: {ex.Message}\n\n{ex}";
             }
             finally
             {
@@ -107,19 +120,13 @@ namespace ChatGptVsix
             }
         }
 
-        private void CancelBtn_Click(object sender, RoutedEventArgs e)
-        {
-            CancelInFlight();
-        }
+        private void CancelBtn_Click(object sender, RoutedEventArgs e) => CancelInFlight();
 
         private void SetBusy(bool isBusy)
         {
-            // These controls must exist in XAML with x:Name="SendBtn" and "CancelBtn".
-            if (SendBtn != null) SendBtn.IsEnabled = !isBusy;
+            if (SendBtn   != null) SendBtn.IsEnabled   = !isBusy;
             if (CancelBtn != null) CancelBtn.IsEnabled = isBusy;
-
-            // Optional: cursor feedback
-            Mouse.OverrideCursor = isBusy ? System.Windows.Input.Cursors.Wait : null;
+            Mouse.OverrideCursor = isBusy ? Cursors.Wait : null;
         }
     }
 }
