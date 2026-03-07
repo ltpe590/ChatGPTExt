@@ -1,7 +1,6 @@
 ﻿using ChatGptVsix.Services;
 using Microsoft.VisualStudio.Shell;
 using System;
-using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -12,32 +11,25 @@ namespace ChatGptVsix
 {
     public partial class ChatGptToolWindowControl : UserControl, IDisposable
     {
-        private readonly HttpClient _httpClient;
         private CancellationTokenSource? _cts;
-        private ILlmClient? _llmClient;
-
-        // Package reference so we can read Options at send-time
-        private AsyncPackage? _package;
+        private AsyncPackage?            _package;
 
         public ChatGptToolWindowControl()
         {
             InitializeComponent();
-            _httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(120) };
         }
 
-        /// <summary>Called by ChatGptToolWindow after creation so we can reach Options.</summary>
         public void SetPackage(AsyncPackage package) => _package = package;
 
         public void Dispose()
         {
             CancelInFlight();
             _cts?.Dispose();
-            _httpClient.Dispose();
         }
 
         private void CancelInFlight()
         {
-            try { _cts?.Cancel(); } catch { /* ignore */ }
+            try { _cts?.Cancel(); } catch { }
         }
 
         private ILlmClient BuildClient()
@@ -51,17 +43,11 @@ namespace ChatGptVsix
             }
             else
             {
-                // Fallback when package not yet wired (design-time / unit tests)
                 settings = ProviderSettings.DefaultsFor(LlmProvider.GitHubModels);
             }
 
-            // Invalidate cached client when settings change
-            _llmClient = LlmClientFactory.Create(settings, _httpClient);
-
-            // Update status label
             StatusText.Text = $"[{settings.Provider} / {settings.Model}]";
-
-            return _llmClient;
+            return LlmClientFactory.Create(settings);  // each client owns its own HttpClient
         }
 
         private void SendBtn_Click(object sender, RoutedEventArgs e)
@@ -93,7 +79,6 @@ namespace ChatGptVsix
             {
                 ResponseBox.Text = string.Empty;
 
-                // Read system prompt from options (falls back to default if package not set)
                 string systemPrompt = "You are a senior C# developer. Be concise. Provide actionable suggestions and code.";
                 if (_package != null)
                 {

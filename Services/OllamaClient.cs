@@ -13,16 +13,13 @@ namespace ChatGptVsix.Services
         private static readonly JsonSerializerOptions JsonOptions =
             new JsonSerializerOptions(JsonSerializerDefaults.Web);
 
-        private readonly HttpClient _http;
-        private readonly string     _model;
+        private readonly string _baseUrl;
+        private readonly string _model;
 
-        public OllamaClient(HttpClient http, string model, string baseUrl = "http://localhost:11434/")
+        public OllamaClient(string model, string baseUrl = "http://localhost:11434/")
         {
-            _http  = http  ?? throw new ArgumentNullException(nameof(http));
-            _model = model ?? throw new ArgumentNullException(nameof(model));
-
-            var uri = (baseUrl ?? "http://localhost:11434/").TrimEnd('/') + "/";
-            _http.BaseAddress = new Uri(uri);
+            _model   = model ?? throw new ArgumentNullException(nameof(model));
+            _baseUrl = (baseUrl ?? "http://localhost:11434/").TrimEnd('/') + "/";
         }
 
         public async Task<string> ChatAsync(string systemPrompt, string userPrompt, CancellationToken ct)
@@ -38,9 +35,9 @@ namespace ChatGptVsix.Services
                 stream = false
             };
 
-            using var resp = await _http
-                .PostAsJsonAsync("v1/chat/completions", payload, JsonOptions, ct)
-                .ConfigureAwait(false);
+            using var http = new HttpClient { BaseAddress = new Uri(_baseUrl), Timeout = TimeSpan.FromSeconds(120) };
+            using var resp = await http.PostAsJsonAsync("v1/chat/completions", payload, JsonOptions, ct)
+                                       .ConfigureAwait(false);
 
             var body = await resp.Content.ReadAsStringAsync().ConfigureAwait(false);
 

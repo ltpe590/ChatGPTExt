@@ -60,7 +60,9 @@
     <Compile Include="Services\IEditorContextService.cs" />
     <Compile Include="Services\ILlmClient.cs" />
     <Compile Include="Services\OllamaClient.cs" />
-        <Compile Include="ChatGptOptionsPage.cs" />
+    <Compile Include="ChatGptOptionsPage.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="Services\LlmProvider.cs" />
     <Compile Include="Services\ProviderSettings.cs" />
     <Compile Include="Services\LlmClientFactory.cs" />
