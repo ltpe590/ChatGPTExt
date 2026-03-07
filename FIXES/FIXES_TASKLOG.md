@@ -102,3 +102,48 @@
 - Last known good state:
   - Build: OK
   - Git: clean
+
+---
+
+### TASK-SETUP-01 update
+- [x] F02 — Repo hygiene: temp files deleted, FIXES folder committed
+  - Commit: 93458ec
+  - Evidence: git clean, build OK
+
+---
+
+### TASK-FIX-01 — Multi-provider + broken pipeline fix
+- Status: DONE
+- Last update: 2026-03-07
+
+### Fragments completed
+
+- [x] F01 — LlmProvider enum + ProviderSettings defaults — Commit: bfdcbcc
+- [x] F02 — ChatGptOptionsPage (Tools > Options > AI Assistant) — Commit: bfdcbcc
+- [x] F03 — LlmClientFactory — Commit: bfdcbcc
+- [x] F04 — Wire factory into tool window control, provider shown in status — Commit: bfdcbcc
+- [x] F05 — Fix AskChatGptSelectionCommand prompt pipeline (FAIL-01+05) — Commit: bfdcbcc
+- [x] F06 — OpenAiClient configurable baseUrl+model (FAIL-04) — Commit: bfdcbcc
+- [x] F07 — OllamaClient configurable baseUrl — Commit: bfdcbcc
+- [x] F08 — Build gate: 0 errors, 0 warnings, VSIX produced — Commit: bfdcbcc
+
+### Open item deferred
+- [ ] FAIL-03 — FilePath always null in EditorContextService -> TASK-FIX-02
+
+### Resume pointer
+- Next: TASK-FIX-02 — Fix FilePath in EditorContextService
+- Build: OK | Git: clean (bfdcbcc)
+
+---
+
+### Provider quick-reference (Tools > Options > AI Assistant)
+
+| Provider      | Base URL                                | Key needed |
+|---------------|-----------------------------------------|------------|
+| GitHub Models | https://models.inference.ai.azure.com   | GitHub PAT |
+| OpenAI        | https://api.openai.com                  | Yes        |
+| Groq          | https://api.groq.com/openai             | Yes (free) |
+| OpenRouter    | https://openrouter.ai/api               | Yes (free) |
+| Mistral       | https://api.mistral.ai                  | Yes (free) |
+| Ollama        | http://localhost:11434                  | No         |
+| LM Studio     | http://localhost:1234                   | No         |
