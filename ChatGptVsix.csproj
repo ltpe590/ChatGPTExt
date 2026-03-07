@@ -47,6 +47,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="AskChatGptFixErrorsCommand.cs" />
     <Compile Include="AskChatGptSelectionCommand.cs" />
     <Compile Include="ChatGptToolWindow.cs" />
     <Compile Include="Infrastructure\IsExternalInit.cs" />
@@ -57,6 +58,10 @@
       <DependentUpon>ChatGptToolWindowControl.xaml</DependentUpon>
     </Compile>
     <Compile Include="Services\EditorContextService.cs" />
+        <Compile Include="Services\IErrorContextService.cs" />
+    <Compile Include="Services\ApplyFixService.cs" />
+    <Compile Include="Services\SolutionContextService.cs" />
+    <Compile Include="Services\ErrorContextService.cs" />
     <Compile Include="Services\IEditorContextService.cs" />
     <Compile Include="Services\ILlmClient.cs" />
     <Compile Include="Services\OllamaClient.cs" />

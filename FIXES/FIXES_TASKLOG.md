@@ -147,3 +147,50 @@
 | Mistral       | https://api.mistral.ai                  | Yes (free) |
 | Ollama        | http://localhost:11434                  | No         |
 | LM Studio     | http://localhost:1234                   | No         |
+
+---
+
+### TASK-FIX-02 — FilePath fix + Copilot-like capabilities
+- Status: IN-PROGRESS
+- Started: 2026-03-07
+- Last update: 2026-03-07
+
+### Fragments
+
+- [ ] F01 — Fix FilePath in EditorContextService via IVsRunningDocumentTable
+  - Plan: Replace stub IVsUserData lookup with SVsRunningDocumentTable to get moniker (file path)
+  - Files: Services/EditorContextService.cs
+  - Preconditions: 0 build errors
+
+- [ ] F02 — Add ErrorContextService (reads VS error list for a given file)
+  - Plan: New service reads DTE ErrorList, returns list of {file, line, col, message, code} for active file
+  - Files: Services/ErrorContextService.cs, Services/IErrorContextService.cs (new)
+  - Preconditions: F01 done
+
+- [ ] F03 — Add FixErrorsCommand (CMD-01) — command wiring only
+  - Plan: New AskChatGptFixErrorsCommand.cs; register in Commands.vsct + ChatGPTPackage.cs + csproj
+  - Files: AskChatGptFixErrorsCommand.cs, Commands.vsct, ChatGPTPackage.cs, ChatGptVsix.csproj
+  - Preconditions: F02 done
+
+- [ ] F04 — Implement FixErrorsCommand logic: read errors + file + build prompt + send
+  - Plan: Get errors via ErrorContextService; read file via File.ReadAllText; build structured prompt; send via tool window
+  - Files: AskChatGptFixErrorsCommand.cs
+  - Preconditions: F03 done
+
+- [ ] F05 — Add ApplyFixService: parse code block from LLM response, write back to file
+  - Plan: Parse ```csharp block from ResponseBox; show diff summary; write back via File.WriteAllLines + DTE reload
+  - Files: Services/ApplyFixService.cs (new), ChatGptToolWindowControl.xaml.cs, ChatGptToolWindowControl.xaml
+  - Preconditions: F04 done
+
+- [ ] F06 — Add SolutionContextService: expose file tree + multi-file read for richer prompts
+  - Plan: New service wraps DTE.Solution traversal; returns list of {project, file, relativePath}; used by future commands
+  - Files: Services/SolutionContextService.cs (new)
+  - Preconditions: F05 done
+
+- [ ] F07 — Build gate + commit all
+  - Plan: dotnet build 0 errors; git commit
+  - Preconditions: F06 done
+
+### Resume pointer
+- Resume from: F01
+- Last known good state: Build OK | Git clean (94cbc44)

@@ -1,4 +1,4 @@
-﻿using ChatGptVsix.Services;
+using ChatGptVsix.Services;
 using Microsoft.VisualStudio.Shell;
 using System;
 using System.Threading;
@@ -14,6 +14,9 @@ namespace ChatGptVsix
         private CancellationTokenSource? _cts;
         private AsyncPackage?            _package;
 
+        // Track the last file path used in a Fix Errors request so Apply Fix knows where to write
+        private string? _lastFixTargetFile;
+
         public ChatGptToolWindowControl()
         {
             InitializeComponent();
@@ -27,10 +30,122 @@ namespace ChatGptVsix
             _cts?.Dispose();
         }
 
-        private void CancelInFlight()
+        // ── Public API used by commands ───────────────────────────────────────
+
+        /// <summary>Sets the target file for the next Apply Fix operation.</summary>
+        public void SetFixTarget(string? filePath) => _lastFixTargetFile = filePath;
+
+        public async Task SendAsync(string prompt)
         {
-            try { _cts?.Cancel(); } catch { }
+            CancelInFlight();
+            _cts?.Dispose();
+            _cts = new CancellationTokenSource();
+            var ct = _cts.Token;
+
+            SetBusy(true);
+            ApplyFixBtn.IsEnabled  = false;
+            ApplyStatusText.Text   = "";
+
+            try
+            {
+                ResponseBox.Text = string.Empty;
+
+                string systemPrompt = "You are a senior C# developer. Be concise. Provide actionable suggestions and code.";
+                if (_package != null)
+                {
+                    var page = (ChatGptOptionsPage)_package.GetDialogPage(typeof(ChatGptOptionsPage));
+                    if (!string.IsNullOrWhiteSpace(page.SystemPrompt))
+                        systemPrompt = page.SystemPrompt;
+                }
+
+                var client = BuildClient();
+                var answer = await client.ChatAsync(systemPrompt, prompt, ct).ConfigureAwait(true);
+                ResponseBox.Text = answer;
+
+                // Enable Apply Fix if a code block is present and we have a target file
+                ApplyFixBtn.IsEnabled = !string.IsNullOrEmpty(_lastFixTargetFile)
+                                        && answer.Contains("```");
+            }
+            catch (OperationCanceledException)
+            {
+                ResponseBox.Text = "Canceled.";
+            }
+            catch (Exception ex)
+            {
+                ResponseBox.Text = $"Error: {ex.Message}\n\n{ex}";
+            }
+            finally
+            {
+                SetBusy(false);
+            }
         }
+
+        // ── Button handlers ───────────────────────────────────────────────────
+
+        private void SendBtn_Click(object sender, RoutedEventArgs e)
+            => _ = SendButtonHandlerAsync();
+
+        private async Task SendButtonHandlerAsync()
+        {
+            try
+            {
+                var prompt = PromptBox.Text;
+                if (string.IsNullOrWhiteSpace(prompt)) return;
+                _lastFixTargetFile = null; // manual send — no auto apply target
+                await SendAsync(prompt).ConfigureAwait(true);
+            }
+            catch (Exception ex)
+            {
+                ResponseBox.Text = ex.ToString();
+            }
+        }
+
+        private void CancelBtn_Click(object sender, RoutedEventArgs e) => CancelInFlight();
+
+        private void ClearBtn_Click(object sender, RoutedEventArgs e)
+        {
+            PromptBox.Text        = "";
+            ResponseBox.Text      = "";
+            ApplyStatusText.Text  = "";
+            ApplyFixBtn.IsEnabled = false;
+            _lastFixTargetFile    = null;
+            StatusText.Text       = "";
+        }
+
+        private void ApplyFixBtn_Click(object sender, RoutedEventArgs e)
+            => _ = ApplyFixAsync();
+
+        private async Task ApplyFixAsync()
+        {
+            if (_package == null || string.IsNullOrEmpty(_lastFixTargetFile)) return;
+
+            ApplyFixBtn.IsEnabled = false;
+            ApplyStatusText.Text  = "Applying fix...";
+
+            try
+            {
+                var svc = new ApplyFixService(_package);
+                var (success, message) = await svc.ApplyAsync(
+                    ResponseBox.Text, _lastFixTargetFile!, CancellationToken.None)
+                    .ConfigureAwait(true);
+
+                ApplyStatusText.Text      = success ? $"✔ {message}" : $"✘ {message}";
+                ApplyStatusText.Foreground = success
+                    ? System.Windows.Media.Brushes.Green
+                    : System.Windows.Media.Brushes.Red;
+
+                if (!success)
+                    ApplyFixBtn.IsEnabled = true; // allow retry
+            }
+            catch (Exception ex)
+            {
+                ApplyStatusText.Text      = $"✘ {ex.Message}";
+                ApplyStatusText.Foreground = System.Windows.Media.Brushes.Red;
+                ApplyFixBtn.IsEnabled      = true;
+            }
+        }
+
+        // ── Helpers ───────────────────────────────────────────────────────────
 
         private ILlmClient BuildClient()
         {
@@ -47,65 +162,13 @@ namespace ChatGptVsix
             }
 
             StatusText.Text = $"[{settings.Provider} / {settings.Model}]";
-            return LlmClientFactory.Create(settings);  // each client owns its own HttpClient
+            return LlmClientFactory.Create(settings);
         }
 
-        private void SendBtn_Click(object sender, RoutedEventArgs e)
-            => _ = SendButtonHandlerAsync();
-
-        private async Task SendButtonHandlerAsync()
+        private void CancelInFlight()
         {
-            try
-            {
-                var prompt = PromptBox.Text;
-                if (string.IsNullOrWhiteSpace(prompt)) return;
-                await SendAsync(prompt).ConfigureAwait(true);
-            }
-            catch (Exception ex)
-            {
-                ResponseBox.Text = ex.ToString();
-            }
+            try { _cts?.Cancel(); } catch { }
         }
-
-        public async Task SendAsync(string prompt)
-        {
-            CancelInFlight();
-            _cts?.Dispose();
-            _cts = new CancellationTokenSource();
-            var ct = _cts.Token;
-
-            SetBusy(true);
-            try
-            {
-                ResponseBox.Text = string.Empty;
-
-                string systemPrompt = "You are a senior C# developer. Be concise. Provide actionable suggestions and code.";
-                if (_package != null)
-                {
-                    var page = (ChatGptOptionsPage)_package.GetDialogPage(typeof(ChatGptOptionsPage));
-                    if (!string.IsNullOrWhiteSpace(page.SystemPrompt))
-                        systemPrompt = page.SystemPrompt;
-                }
-
-                var client = BuildClient();
-                var answer = await client.ChatAsync(systemPrompt, prompt, ct).ConfigureAwait(true);
-                ResponseBox.Text = answer;
-            }
-            catch (OperationCanceledException)
-            {
-                ResponseBox.Text = "Canceled.";
-            }
-            catch (Exception ex)
-            {
-                ResponseBox.Text = $"Error: {ex.Message}\n\n{ex}";
-            }
-            finally
-            {
-                SetBusy(false);
-            }
-        }
-
-        private void CancelBtn_Click(object sender, RoutedEventArgs e) => CancelInFlight();
 
         private void SetBusy(bool isBusy)
         {

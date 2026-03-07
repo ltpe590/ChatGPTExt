@@ -28,6 +28,7 @@ namespace ChatGptVsix
             await JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
             await ShowChatGptToolWindowCommand.InitializeAsync(this);
             await AskChatGptSelectionCommand.InitializeAsync(this);
+            await AskChatGptFixErrorsCommand.InitializeAsync(this);
         }
     }
 }
