@@ -10,9 +10,9 @@
         public static readonly ProviderSettings GitHubModels = new ProviderSettings
         {
             Provider    = LlmProvider.GitHubModels,
-            BaseUrl     = "https://models.inference.ai.azure.com",
-            Model       = "gpt-4o",
-            ApiKeyHint  = "GitHub Personal Access Token (Settings > Developer settings > PAT)"
+            BaseUrl     = "https://models.github.ai",
+            Model       = "openai/gpt-4o",
+            ApiKeyHint  = "GitHub PAT with models:read scope (github.com > Settings > Developer settings > PAT > Fine-grained)"
         };
 
         public static readonly ProviderSettings OpenAI = new ProviderSettings

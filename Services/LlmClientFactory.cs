@@ -3,10 +3,6 @@ using System.Net.Http;
 
 namespace ChatGptVsix.Services
 {
-    /// <summary>
-    /// Creates the correct ILlmClient from a ProviderSettings snapshot.
-    /// OpenAI-compatible providers all share OpenAiClient; Ollama gets its own.
-    /// </summary>
     internal static class LlmClientFactory
     {
         public static ILlmClient Create(ProviderSettings settings, HttpClient http)
@@ -24,7 +20,8 @@ namespace ChatGptVsix.Services
                 case LlmProvider.OpenRouter:
                 case LlmProvider.Mistral:
                 case LlmProvider.LmStudio:
-                    return new OpenAiClient(http, settings.Model, settings.ApiKey, settings.BaseUrl);
+                    return new OpenAiClient(http, settings.Model, settings.ApiKey,
+                                            settings.BaseUrl, settings.Provider);
 
                 // ── Ollama — own API shape ────────────────────────────────────
                 case LlmProvider.Ollama:

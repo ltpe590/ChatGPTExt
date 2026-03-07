@@ -24,7 +24,7 @@ namespace ChatGptVsix
         [DisplayName("Base URL")]
         [Description(
             "API base URL for the selected provider.\n" +
-            "GitHub Models : https://models.inference.ai.azure.com\n" +
+            "GitHub Models : https://models.github.ai\n" +
             "OpenAI        : https://api.openai.com\n" +
             "Groq          : https://api.groq.com/openai\n" +
             "OpenRouter    : https://openrouter.ai/api\n" +
