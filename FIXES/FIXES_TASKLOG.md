@@ -194,3 +194,13 @@
 ### Resume pointer
 - Resume from: F01
 - Last known good state: Build OK | Git clean (94cbc44)
+
+### TASK-FIX-02 update — 2026-03-07 — DONE
+- [x] F01 FilePath via RDT — EditorContextService.cs
+- [x] F02 ErrorContextService — new
+- [x] F03 FixErrorsCommand wiring — vsct + package + csproj
+- [x] F04 FixErrorsCommand logic — read errors + file + prompt + send
+- [x] F05 ApplyFixService + Apply Fix button in tool window UI
+- [x] F06 SolutionContextService — solution file tree + context block builder
+- [x] F07 Build gate: 0 errors 0 warnings | Commit: 
+- Architecture Enforcement: PASS

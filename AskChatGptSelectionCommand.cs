@@ -10,7 +10,8 @@ namespace ChatGptVsix
 {
     internal sealed class AskChatGptSelectionCommand
     {
-        public const int CommandId = 0x0101;
+        public const int CommandId    = 0x0101; // Tools menu
+        public const int CommandIdCtx = 0x0103; // Editor right-click
         public static readonly Guid CommandSet = new Guid("9e64f5c5-0c65-4a2a-9c6b-9b1c2d0d7b0f");
 
         private readonly AsyncPackage _package;
@@ -18,27 +19,29 @@ namespace ChatGptVsix
         private AskChatGptSelectionCommand(AsyncPackage package, OleMenuCommandService commandService)
         {
             _package = package;
-            var menuCommandID = new CommandID(CommandSet, CommandId);
-            var menuItem = new MenuCommand((_, __) =>
-            {
-                ThreadHelper.JoinableTaskFactory.Run(ExecuteAsync);
-            }, menuCommandID);
-            commandService.AddCommand(menuItem);
+
+            // Register in Tools menu
+            commandService.AddCommand(new MenuCommand(
+                (_, __) => ThreadHelper.JoinableTaskFactory.Run(ExecuteAsync),
+                new CommandID(CommandSet, CommandId)));
+
+            // Register in editor right-click context menu (same handler)
+            commandService.AddCommand(new MenuCommand(
+                (_, __) => ThreadHelper.JoinableTaskFactory.Run(ExecuteAsync),
+                new CommandID(CommandSet, CommandIdCtx)));
         }
 
         public static async Task InitializeAsync(AsyncPackage package)
         {
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-            var commandService = await package.GetServiceAsync(typeof(IMenuCommandService)) as OleMenuCommandService;
-            if (commandService is null) return;
-            _ = new AskChatGptSelectionCommand(package, commandService);
+            var cs = await package.GetServiceAsync(typeof(IMenuCommandService)) as OleMenuCommandService;
+            if (cs != null) _ = new AskChatGptSelectionCommand(package, cs);
         }
 
         private async Task ExecuteAsync()
         {
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
-            // 1. Capture editor context FIRST (before showing window)
             int surroundingLines = 80;
             var page = (ChatGptOptionsPage)_package.GetDialogPage(typeof(ChatGptOptionsPage));
             if (page != null) surroundingLines = page.SurroundingLineCount;
@@ -47,16 +50,12 @@ namespace ChatGptVsix
             var ctx = await contextService.GetCurrentAsync(surroundingLines, CancellationToken.None)
                                           .ConfigureAwait(true);
 
-            // 2. Show/focus the tool window
             var window = await _package.ShowToolWindowAsync(
                 typeof(ChatGptToolWindow), 0, true, _package.DisposalToken);
 
             if (window?.Content is not ChatGptToolWindowControl ui) return;
 
-            // 3. Build the context-aware prompt
             var prompt = BuildPrompt(ctx);
-
-            // 4. Send it
             await ui.SendAsync(prompt).ConfigureAwait(true);
         }
 
@@ -68,8 +67,8 @@ namespace ChatGptVsix
 
             if (!string.IsNullOrWhiteSpace(ctx.FilePath))
             {
-                sb.AppendLine($"File     : {ctx.FilePath}");
-                sb.AppendLine($"Language : {ctx.ContentType}");
+                sb.AppendLine("File     : " + ctx.FilePath);
+                sb.AppendLine("Language : " + ctx.ContentType);
                 sb.AppendLine();
             }
 
@@ -80,8 +79,7 @@ namespace ChatGptVsix
                 sb.AppendLine(ctx.SelectionText);
                 sb.AppendLine("```");
                 sb.AppendLine();
-                sb.AppendLine("Tasks:");
-                sb.AppendLine("1. Identify issues (correctness, performance, async/threading, VS extensibility).");
+                sb.AppendLine("1. Identify issues (correctness, performance, async/threading).");
                 sb.AppendLine("2. Suggest improvements.");
                 sb.AppendLine("3. Provide a corrected snippet (changed parts only).");
             }

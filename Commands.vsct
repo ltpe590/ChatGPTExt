@@ -5,12 +5,19 @@
 
   <Commands package="guidChatGptPackage">
     <Groups>
+      <!-- Tools menu group -->
       <Group guid="guidChatGptCmdSet" id="MyMenuGroup" priority="0x0600">
         <Parent guid="guidSHLMainMenu" id="IDM_VS_MENU_TOOLS"/>
+      </Group>
+
+      <!-- Editor right-click context menu group -->
+      <Group guid="guidChatGptCmdSet" id="EditorCtxGroup" priority="0x0700">
+        <Parent guid="guidSHLMainMenu" id="IDM_VS_CTXT_CODEWIN"/>
       </Group>
     </Groups>
 
     <Buttons>
+      <!-- Tools menu -->
       <Button guid="guidChatGptCmdSet" id="cmdShowToolWindow" priority="0x0100" type="Button">
         <Parent guid="guidChatGptCmdSet" id="MyMenuGroup" />
         <Strings>
@@ -34,17 +41,36 @@
           <CanonicalName>ChatGptVsix.FixErrors</CanonicalName>
         </Strings>
       </Button>
+
+      <!-- Editor right-click context menu (same commands, different IDs) -->
+      <Button guid="guidChatGptCmdSet" id="cmdAskSelectionCtx" priority="0x0100" type="Button">
+        <Parent guid="guidChatGptCmdSet" id="EditorCtxGroup" />
+        <Strings>
+          <ButtonText>Ask AI (Selection)</ButtonText>
+          <CanonicalName>ChatGptVsix.AskSelectionCtx</CanonicalName>
+        </Strings>
+      </Button>
+
+      <Button guid="guidChatGptCmdSet" id="cmdFixErrorsCtx" priority="0x0101" type="Button">
+        <Parent guid="guidChatGptCmdSet" id="EditorCtxGroup" />
+        <Strings>
+          <ButtonText>AI: Fix Errors in Current File</ButtonText>
+          <CanonicalName>ChatGptVsix.FixErrorsCtx</CanonicalName>
+        </Strings>
+      </Button>
     </Buttons>
   </Commands>
 
   <Symbols>
     <GuidSymbol name="guidChatGptPackage" value="{7c21f4d1-6dc0-4b67-b2b2-29d5f8d3f4a1}" />
     <GuidSymbol name="guidChatGptCmdSet" value="{9e64f5c5-0c65-4a2a-9c6b-9b1c2d0d7b0f}">
-      <IDSymbol name="MyMenuGroup"      value="0x1020" />
-      <IDSymbol name="EditorCtxGroup"   value="0x1030" />
-      <IDSymbol name="cmdShowToolWindow" value="0x0100" />
-      <IDSymbol name="cmdAskSelection"  value="0x0101" />
-      <IDSymbol name="cmdFixErrors"     value="0x0102" />
+      <IDSymbol name="MyMenuGroup"        value="0x1020" />
+      <IDSymbol name="EditorCtxGroup"     value="0x1030" />
+      <IDSymbol name="cmdShowToolWindow"  value="0x0100" />
+      <IDSymbol name="cmdAskSelection"    value="0x0101" />
+      <IDSymbol name="cmdFixErrors"       value="0x0102" />
+      <IDSymbol name="cmdAskSelectionCtx" value="0x0103" />
+      <IDSymbol name="cmdFixErrorsCtx"    value="0x0104" />
     </GuidSymbol>
   </Symbols>
 </CommandTable>
